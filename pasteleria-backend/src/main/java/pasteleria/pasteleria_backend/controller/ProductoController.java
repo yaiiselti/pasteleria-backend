@@ -1,42 +1,51 @@
 package pasteleria.pasteleria_backend.controller;
-import pasteleria.pasteleria_backend.model.Producto;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
-import pasteleria.pasteleria_backend.repository.ProductoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity; // <--- Usamos el Servicio
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import pasteleria.pasteleria_backend.model.Producto;
+import pasteleria.pasteleria_backend.service.ProductoService;
 
 @RestController
 @RequestMapping("/api/productos")
 public class ProductoController {
 
     @Autowired
-    private ProductoRepository productoRepository;
+    private ProductoService productoService; // <--- Inyección del Servicio
 
-    // GET http://localhost:8085/api/productos
-    // Público: Cualquiera puede ver la lista
+    // GET: Público
     @GetMapping
     public List<Producto> getAllProductos() {
-        return productoRepository.findAll();
+        return productoService.getAllProductos();
     }
 
-    // GET http://localhost:8085/api/productos/{codigo}
+    // GET: Público
     @GetMapping("/{codigo}")
-    public Producto getProducto(@PathVariable String codigo) {
-        return productoRepository.findById(codigo).orElse(null);
+    public ResponseEntity<Producto> getProducto(@PathVariable String codigo) {
+        Optional<Producto> producto = productoService.getProductoByCodigo(codigo);
+        return producto.map(ResponseEntity::ok)
+                       .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // POST http://localhost:8085/api/productos
-    // Privado: Solo Admin (Spring Security lo protege por configuración o anotación)
+    // POST: Solo Admin
     @PostMapping
     public Producto createProducto(@RequestBody Producto producto) {
-        return productoRepository.save(producto);
+        return productoService.saveProducto(producto);
     }
     
-    // DELETE http://localhost:8085/api/productos/{codigo}
+    // DELETE: Solo Admin
     @DeleteMapping("/{codigo}")
     public void deleteProducto(@PathVariable String codigo) {
-        productoRepository.deleteById(codigo);
+        productoService.deleteProducto(codigo);
     }
 }

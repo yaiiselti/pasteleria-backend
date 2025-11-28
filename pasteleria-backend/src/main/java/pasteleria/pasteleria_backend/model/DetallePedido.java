@@ -1,10 +1,6 @@
 package pasteleria.pasteleria_backend.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -16,13 +12,12 @@ public class DetallePedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String codigo;   // Código del pastel
-    private String nombre;
+    private String productoCodigo;
+    private String nombre; // Guardamos el nombre por si el producto se borra después
     private Integer precio;
     private Integer cantidad;
-    
-    // Relación inversa (opcional pero útil): Saber a qué pedido pertenece este detalle
-    // @ManyToOne
-    // @JoinColumn(name = "pedido_id")
-    // private Pedido pedido;
+
+    // IMPORTANTE: No pongas aquí una referencia completa al objeto Pedido (@ManyToOne) 
+    // a menos que uses @JsonIgnore, o Spring entrará en un bucle infinito.
+    // Para este proyecto simple, no es necesario enlazarlo de vuelta.
 }
