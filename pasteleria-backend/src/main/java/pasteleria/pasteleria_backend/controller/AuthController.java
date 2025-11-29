@@ -55,7 +55,21 @@ public class AuthController {
         
         Usuario usuario = usuarioRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
 
-        return ResponseEntity.ok(new AuthResponse(jwt, usuario.getNombre(), usuario.getTipo()));
+        // Enviamos el objeto COMPLETO
+        return ResponseEntity.ok(new AuthResponse(
+            jwt,
+            usuario.getRun(),
+            usuario.getNombre(),
+            usuario.getApellidos(),
+            usuario.getEmail(),
+            usuario.getTipo(),     // Rol
+            usuario.getRegion(),
+            usuario.getComuna(),
+            usuario.getDireccion(),
+            // --- AGREGAMOS ESTOS DOS AL FINAL ---
+            usuario.getFechaNacimiento(),
+            usuario.getCodigoPromo()
+        ));    
     }
 
     // --- NUEVO MÉTODO: REGISTRO ---

@@ -1,6 +1,10 @@
 package pasteleria.pasteleria_backend.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
@@ -12,12 +16,14 @@ public class DetallePedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String productoCodigo;
-    private String nombre; // Guardamos el nombre por si el producto se borra después
+    private String codigo;   
+    private String nombre;
     private Integer precio;
     private Integer cantidad;
-
-    // IMPORTANTE: No pongas aquí una referencia completa al objeto Pedido (@ManyToOne) 
-    // a menos que uses @JsonIgnore, o Spring entrará en un bucle infinito.
-    // Para este proyecto simple, no es necesario enlazarlo de vuelta.
+    
+    private String mensaje; // Para dedicatorias (Vi que lo usas en el frontend)
+    
+    // --- ESTO ES LO QUE FALTABA ---
+    private Boolean listo;  // Para el checklist de cocina
+    // -----------------------------
 }

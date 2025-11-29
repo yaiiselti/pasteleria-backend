@@ -3,7 +3,7 @@ package pasteleria.pasteleria_backend.model;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -20,27 +20,25 @@ import lombok.Data;
 public class Pedido {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ID numérico (ej: 1005)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "fecha_emision")
     private String fechaEmision;
-    
-    @Column(name = "hora_emision")
     private String horaEmision;
-    
-    @Column(name = "fecha_entrega")
     private String fechaEntrega;
 
-    private String clienteNombre;
-    private String clienteEmail;
-    private String clienteDireccion;
-    private String clienteComuna;
-    private String medioPago;
+    // --- AQUÍ ESTÁ EL CAMBIO MÁGICO ---
+    // Agrupamos los datos del cliente para coincidir con React
+    @Embedded
+    private ClienteData cliente;
+    // ----------------------------------
 
+    private Integer subtotal;
+    private Integer descuento;
     private Integer total;
     private String estado; 
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "pedido_id") // Esto crea la llave foránea en la tabla detalles
+    @JoinColumn(name = "pedido_id")
     private List<DetallePedido> productos;
 }

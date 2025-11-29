@@ -3,6 +3,7 @@ package pasteleria.pasteleria_backend.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,37 +17,45 @@ import pasteleria.pasteleria_backend.model.Pedido;
 import pasteleria.pasteleria_backend.service.PedidoService;
 
 @RestController
-@RequestMapping("/api/pedidos") // La ruta base para todo lo de pedidos
+@RequestMapping("/api/pedidos")
 public class PedidoController {
 
     @Autowired
     private PedidoService pedidoService;
 
-    // 1. GET: Admin ve todos los pedidos
-    // http://localhost:8085/api/pedidos
     @GetMapping
     public List<Pedido> getAllPedidos() {
         return pedidoService.getAllPedidos();
     }
 
-    // 2. GET: Cliente ve SOLO sus pedidos (Filtramos por email)
-    // http://localhost:8085/api/pedidos/mis-pedidos?email=juan@correo.cl
     @GetMapping("/mis-pedidos")
     public List<Pedido> getMisPedidos(@RequestParam String email) {
         return pedidoService.getPedidosByCliente(email);
     }
 
-    // 3. POST: Crear un nuevo pedido (Cuando le dan "Pagar" en React)
-    // http://localhost:8085/api/pedidos
     @PostMapping
     public Pedido createPedido(@RequestBody Pedido pedido) {
         return pedidoService.savePedido(pedido);
     }
 
-    // 4. PUT: Admin actualiza estado (Pendiente -> Entregado)
-    // http://localhost:8085/api/pedidos/1/estado?nuevoEstado=Entregado
+    // --- ACTUALIZAR PEDIDO (Para el checklist de cocina) ---
+    @PutMapping("/{id}")
+    public Pedido updatePedido(@PathVariable Long id, @RequestBody Pedido pedido) {
+        // Al guardar con el mismo ID, Spring actualiza los datos (incluyendo el estado "listo" de los productos)
+        pedido.setId(id); 
+        return pedidoService.savePedido(pedido);
+    }
+
+    // --- CAMBIAR SOLO ESTADO (Rápido) ---
     @PutMapping("/{id}/estado")
     public Pedido updateEstadoPedido(@PathVariable Long id, @RequestParam String nuevoEstado) {
         return pedidoService.updateEstado(id, nuevoEstado);
     }
+
+    // --- ELIMINAR PEDIDO (Faltaba esto) ---
+    @DeleteMapping("/{id}")
+    public void deletePedido(@PathVariable Long id) {
+        pedidoService.deletePedido(id);
+    }
+
 }
