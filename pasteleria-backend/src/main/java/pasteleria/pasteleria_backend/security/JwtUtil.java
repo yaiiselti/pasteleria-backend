@@ -1,13 +1,11 @@
 package pasteleria.pasteleria_backend.security;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
@@ -19,19 +17,14 @@ import jakarta.annotation.PostConstruct;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secretKeyString;
-
+    // Ya no leemos del properties para la key, generamos una segura en memoria.
     private Key SECRET_KEY;
 
     @PostConstruct
     public void init() {
-        // Convertimos el texto del properties en una llave criptográfica real
-        byte[] keyBytes = secretKeyString.getBytes(StandardCharsets.UTF_8);
-        this.SECRET_KEY = Keys.hmacShaKeyFor(keyBytes);
+        // Genera una clave segura aleatoria de 256 bits para HS256
+        this.SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     }
-
-    // --- MÉTODOS ESTÁNDAR ---
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

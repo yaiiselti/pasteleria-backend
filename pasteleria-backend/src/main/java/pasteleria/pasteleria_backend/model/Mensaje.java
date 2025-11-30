@@ -1,5 +1,5 @@
 package pasteleria.pasteleria_backend.model;
-import jakarta.persistence.Column;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,12 +11,20 @@ import lombok.Data;
 @Table(name = "mensajes")
 @Data
 public class Mensaje {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String nombre;
     private String email;
-    @Column(length = 2000)
     private String comentario;
-    private String fecha;
-    private boolean leido;
+    
+    // Lo manejamos como String para facilitar la compatibilidad con el frontend
+    // o LocalDateTime si prefieres, pero el frontend manda strings a veces.
+    // Para simplificar auditoría, lo dejamos compatible con lo que envíe React.
+    private String fecha; 
+
+    // CAMBIO: Campo nuevo requerido por ContactoService.ts
+    private Boolean leido = false; 
 }

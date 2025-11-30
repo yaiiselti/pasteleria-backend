@@ -3,6 +3,7 @@ package pasteleria.pasteleria_backend.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import pasteleria.pasteleria_backend.model.Usuario;
+import pasteleria.pasteleria_backend.repository.UsuarioRepository;
 import pasteleria.pasteleria_backend.service.UsuarioService;
 
 @RestController
@@ -21,27 +23,40 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
-    // GET: Listar todos (Para el AdminDashboard)
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     @GetMapping
     public List<Usuario> getAllUsuarios() {
-        return usuarioService.getAllUsuarios();
+        return usuarioRepository.findAll();
     }
 
-    // GET: Buscar uno por RUN (Para editar)
     @GetMapping("/{run}")
-    public Usuario getUsuario(@PathVariable String run) {
-        return usuarioService.getUsuarioByRun(run).orElse(null);
+    public ResponseEntity<Usuario> getUsuarioByRun(@PathVariable String run) {
+        return usuarioRepository.findById(run)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST: El Admin crea un usuario manualmente (además del Registro público)
     @PostMapping
-    public Usuario createUsuario(@RequestBody Usuario usuario) {
-        return usuarioService.saveUsuario(usuario);
+    public ResponseEntity<Usuario> saveUsuario(@RequestBody Usuario usuario) {
+        // Validaciones básicas de integridad
+        if (usuario.getTipo() == null || usuario.getTipo().isEmpty()) {
+            usuario.setTipo("Cliente");
+        }
+        
+        // El servicio se encarga de no re-encriptar la contraseña si ya es un hash
+        // Esto permite editar otros campos sin romper el login
+        Usuario guardado = usuarioService.saveUsuario(usuario);
+        return ResponseEntity.ok(guardado);
     }
 
-    // DELETE: Eliminar usuario
     @DeleteMapping("/{run}")
-    public void deleteUsuario(@PathVariable String run) {
-        usuarioService.deleteUsuario(run);
+    public ResponseEntity<?> deleteUsuario(@PathVariable String run) {
+        if (usuarioRepository.existsById(run)) {
+            usuarioRepository.deleteById(run);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

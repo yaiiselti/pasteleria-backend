@@ -5,11 +5,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "detalles_pedido")
-@Data
+@Getter @Setter // CAMBIO: Usamos esto en lugar de @Data para seguridad en JPA
 public class DetallePedido {
 
     @Id
@@ -21,9 +22,10 @@ public class DetallePedido {
     private Integer precio;
     private Integer cantidad;
     
-    private String mensaje; // Para dedicatorias (Vi que lo usas en el frontend)
+    private String mensaje;
     
-    // --- ESTO ES LO QUE FALTABA ---
-    private Boolean listo;  // Para el checklist de cocina
-    // -----------------------------
+    private Boolean listo;
+    
+    // Constructor vacío necesario para JPA
+    public DetallePedido() {}
 }

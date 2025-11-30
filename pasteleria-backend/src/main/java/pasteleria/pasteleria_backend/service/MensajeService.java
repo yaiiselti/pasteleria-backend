@@ -1,7 +1,7 @@
 package pasteleria.pasteleria_backend.service;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,23 +17,24 @@ public class MensajeService {
     private MensajeRepository mensajeRepository;
 
     public List<Mensaje> getAllMensajes() {
+        // Opcional: Podríamos ordenarlos por ID descendente para ver los nuevos primero
         return mensajeRepository.findAll();
     }
 
     public Mensaje saveMensaje(Mensaje mensaje) {
-        // Si es nuevo, ponemos la fecha de hoy y leido=false automáticamente
-        if (mensaje.getId() == null) {
-            mensaje.setLeido(false);
-            if (mensaje.getFecha() == null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                mensaje.setFecha(sdf.format(new Date()));
-            }
+        // 1. GENERACIÓN AUTOMÁTICA DE FECHA
+        // Si no viene fecha, ponemos la del servidor "Ahora mismo"
+        if (mensaje.getFecha() == null || mensaje.getFecha().isEmpty()) {
+            String fechaActual = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+            mensaje.setFecha(fechaActual);
         }
-        return mensajeRepository.save(mensaje);
-    }
 
-    public void deleteMensaje(Long id) {
-        mensajeRepository.deleteById(id);
+        // 2. Estado inicial por defecto
+        // Aseguramos que empiece como "No leído"
+        mensaje.setLeido(false);
+
+        return mensajeRepository.save(mensaje);
     }
 
     public Mensaje marcarComoLeido(Long id) {
@@ -41,5 +42,9 @@ public class MensajeService {
             m.setLeido(true);
             return mensajeRepository.save(m);
         }).orElse(null);
+    }
+
+    public void deleteMensaje(Long id) {
+        mensajeRepository.deleteById(id);
     }
 }

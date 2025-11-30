@@ -15,19 +15,22 @@ public class Usuario {
 
     @Id
     @Column(length = 20)
-    private String run; // El ID principal
+    private String run;
 
     private String nombre;
     private String apellidos;
     private String email;
     private String password;
     
-    // --- CAMPOS QUE FALTABAN PARA TU FRONTEND ---
     private String tipo; // 'Cliente' o 'Administrador'
-    private String pin;  // <--- VITAL para que Login.tsx funcione
+    
+    @Column(nullable = true) // Permitimos nulo porque Registro.tsx no lo pide
+    private String pin;
     
     private String region;
     private String comuna;
+    
+    @Column(nullable = true) // Permitimos nulo
     private String direccion;
 
     @Column(name = "fecha_nacimiento")

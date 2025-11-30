@@ -1,12 +1,11 @@
 package pasteleria.pasteleria_backend.service;
 
+import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 import pasteleria.pasteleria_backend.model.Usuario;
 import pasteleria.pasteleria_backend.repository.UsuarioRepository;
@@ -18,7 +17,7 @@ public class UsuarioService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // Para encriptar la clave
+    private PasswordEncoder passwordEncoder;
 
     public List<Usuario> getAllUsuarios() {
         return usuarioRepository.findAll();
@@ -33,11 +32,28 @@ public class UsuarioService {
     }
 
     public Usuario saveUsuario(Usuario usuario) {
-        // IMPORTANTE: Si la contraseña viene sin encriptar, la encriptamos aquí
-        // (En un caso real validaríamos si ya está encriptada o no)
-        if (!usuario.getPassword().startsWith("$2a$")) { 
-            usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        // LÓGICA INTELIGENTE DE CONTRASEÑAS
+        
+        // 1. Verificamos si el usuario ya existe (es una EDICIÓN)
+        if (usuarioRepository.existsById(usuario.getRun())) {
+            Usuario usuarioAntiguo = usuarioRepository.findById(usuario.getRun()).get();
+
+            // 2. Si la contraseña viene vacía o nula, MANTENEMOS la antigua
+            if (usuario.getPassword() == null || usuario.getPassword().trim().isEmpty()) {
+                usuario.setPassword(usuarioAntiguo.getPassword());
+            } 
+            // 3. Si viene una contraseña nueva (y no es el hash antiguo), la encriptamos
+            else if (!usuario.getPassword().equals(usuarioAntiguo.getPassword())) {
+                usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+            }
+        } 
+        // 4. Es un usuario NUEVO: Obligatorio encriptar
+        else {
+            if (usuario.getPassword() != null) {
+                usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+            }
         }
+
         return usuarioRepository.save(usuario);
     }
 

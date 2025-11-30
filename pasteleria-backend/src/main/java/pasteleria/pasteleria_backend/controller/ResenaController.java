@@ -1,8 +1,10 @@
 package pasteleria.pasteleria_backend.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,37 +14,40 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import pasteleria.pasteleria_backend.model.Resena;
-import pasteleria.pasteleria_backend.service.ResenaService;
+import pasteleria.pasteleria_backend.repository.ResenaRepository;
 
 @RestController
 @RequestMapping("/api/resenas")
 public class ResenaController {
 
     @Autowired
-    private ResenaService resenaService;
+    private ResenaRepository resenaRepository;
 
-    // GET: Ver todas (Para el Admin)
     @GetMapping
     public List<Resena> getAllResenas() {
-        return resenaService.getAllResenas();
+        return resenaRepository.findAll();
     }
 
-    // GET: Ver reseñas de un producto específico (Público)
-    // Ejemplo: /api/resenas/producto/TC001
+    // Endpoint crítico para la vista de Producto
     @GetMapping("/producto/{codigoProducto}")
-    public List<Resena> getResenasPorProducto(@PathVariable String codigoProducto) {
-        return resenaService.getResenasByProducto(codigoProducto);
+    public List<Resena> getResenasByProducto(@PathVariable String codigoProducto) {
+        return resenaRepository.findByCodigoProducto(codigoProducto);
     }
 
-    // POST: Cliente escribe una reseña
     @PostMapping
-    public Resena createResena(@RequestBody Resena resena) {
-        return resenaService.saveResena(resena);
+    public ResponseEntity<Resena> createResena(@RequestBody Resena resena) {
+        // Asignamos la fecha del servidor para consistencia
+        resena.setFecha(LocalDate.now().toString());
+        Resena nueva = resenaRepository.save(resena);
+        return ResponseEntity.ok(nueva);
     }
 
-    // DELETE: Admin borra una reseña
     @DeleteMapping("/{id}")
-    public void deleteResena(@PathVariable Long id) {
-        resenaService.deleteResena(id);
+    public ResponseEntity<?> deleteResena(@PathVariable Long id) {
+        if (resenaRepository.existsById(id)) {
+            resenaRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

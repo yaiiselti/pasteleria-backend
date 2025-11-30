@@ -27,18 +27,18 @@ public class Pedido {
     private String horaEmision;
     private String fechaEntrega;
 
-    // --- AQUÍ ESTÁ EL CAMBIO MÁGICO ---
-    // Agrupamos los datos del cliente para coincidir con React
     @Embedded
     private ClienteData cliente;
-    // ----------------------------------
 
     private Integer subtotal;
     private Integer descuento;
     private Integer total;
     private String estado; 
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // CAMBIO CRÍTICO: FetchType.EAGER
+    // Esto obliga a cargar los productos SIEMPRE, evitando el error de LazyInitialization
+    // y asegurando que el JSON llegue completo al React.
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "pedido_id")
     private List<DetallePedido> productos;
 }
