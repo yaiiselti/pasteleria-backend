@@ -21,7 +21,6 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initData() {
         return args -> {
-            // Verificamos si existe el Admin Principal (Según tu frontend es este RUN)
             String adminRun = "11223344-5";
             
             if (!usuarioRepository.existsById(adminRun)) {

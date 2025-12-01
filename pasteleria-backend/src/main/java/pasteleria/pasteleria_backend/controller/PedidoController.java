@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pasteleria.pasteleria_backend.model.DetallePedido;
 import pasteleria.pasteleria_backend.model.Pedido;
-import pasteleria.pasteleria_backend.repository.DetallePedidoRepository;
 import pasteleria.pasteleria_backend.repository.PedidoRepository;
 
 @RestController
@@ -27,8 +26,6 @@ public class PedidoController {
     @Autowired
     private PedidoRepository pedidoRepository;
 
-    @Autowired
-    private DetallePedidoRepository detallePedidoRepository;
 
     @GetMapping
     public List<Pedido> getAllPedidos() {

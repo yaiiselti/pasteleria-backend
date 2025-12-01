@@ -45,7 +45,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
             .authorizeHttpRequests(auth -> auth
-                // 1. SWAGGER (¡LA LISTA VIP!) 🔓
+                // 1. SWAGGER (¡LA LISTA VIP!) 
                 // Agregamos todas las variantes posibles para que no falle
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
