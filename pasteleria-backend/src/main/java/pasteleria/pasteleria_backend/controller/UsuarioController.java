@@ -3,8 +3,10 @@ package pasteleria.pasteleria_backend.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.DeleteMapping; // Excepción de bloqueo
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,16 +41,19 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<Usuario> saveUsuario(@RequestBody Usuario usuario) {
-        // Validaciones básicas de integridad
-        if (usuario.getTipo() == null || usuario.getTipo().isEmpty()) {
-            usuario.setTipo("Cliente");
+    public ResponseEntity<?> saveUsuario(@RequestBody Usuario usuario) {
+        try {
+            if (usuario.getTipo() == null || usuario.getTipo().isEmpty()) {
+                usuario.setTipo("Cliente");
+            }
+            
+            Usuario guardado = usuarioService.saveUsuario(usuario);
+            return ResponseEntity.ok(guardado);
+
+        } catch (OptimisticLockingFailureException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body("Error: El usuario fue modificado por otro administrador mientras editabas. Recarga la página.");
         }
-        
-        // El servicio se encarga de no re-encriptar la contraseña si ya es un hash
-        // Esto permite editar otros campos sin romper el login
-        Usuario guardado = usuarioService.saveUsuario(usuario);
-        return ResponseEntity.ok(guardado);
     }
 
     @DeleteMapping("/{run}")

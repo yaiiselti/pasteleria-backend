@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version; // Importante
 import lombok.Data;
 
 @Entity
@@ -22,15 +23,15 @@ public class Usuario {
     private String email;
     private String password;
     
-    private String tipo; // 'Cliente' o 'Administrador'
+    private String tipo; 
     
-    @Column(nullable = true) // Permitimos nulo porque Registro.tsx no lo pide
+    @Column(nullable = true)
     private String pin;
     
     private String region;
     private String comuna;
     
-    @Column(nullable = true) // Permitimos nulo
+    @Column(nullable = true)
     private String direccion;
 
     @Column(name = "fecha_nacimiento")
@@ -38,4 +39,8 @@ public class Usuario {
 
     @Column(name = "codigo_promo")
     private String codigoPromo;
+
+    
+    @Version
+    private Long version;
 }

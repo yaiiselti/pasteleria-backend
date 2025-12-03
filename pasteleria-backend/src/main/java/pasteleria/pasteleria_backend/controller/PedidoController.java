@@ -1,7 +1,7 @@
 package pasteleria.pasteleria_backend.controller;
 
 import java.util.List;
-import java.util.Objects; // Importante para comparaciones seguras
+import java.util.Objects; 
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pasteleria.pasteleria_backend.model.DetallePedido;
 import pasteleria.pasteleria_backend.model.Pedido;
+import pasteleria.pasteleria_backend.model.Producto;
 import pasteleria.pasteleria_backend.repository.PedidoRepository;
+import pasteleria.pasteleria_backend.repository.ProductoRepository;
 
 @RestController
 @RequestMapping("/api/pedidos")
@@ -26,6 +28,8 @@ public class PedidoController {
     @Autowired
     private PedidoRepository pedidoRepository;
 
+    @Autowired
+    private ProductoRepository productoRepository;
 
     @GetMapping
     public List<Pedido> getAllPedidos() {
@@ -33,7 +37,36 @@ public class PedidoController {
     }
 
     @PostMapping
-    public ResponseEntity<Pedido> createPedido(@RequestBody Pedido pedido) {
+    public ResponseEntity<?> createPedido(@RequestBody Pedido pedido) {
+        
+        int subtotalCalculado = 0;
+
+        if (pedido.getProductos() != null) {
+            for (DetallePedido detalle : pedido.getProductos()) {
+                Producto productoReal = productoRepository.findById(detalle.getCodigo()).orElse(null);
+
+                if (productoReal == null || (productoReal.getActivo() != null && !productoReal.getActivo())) {
+                    return ResponseEntity.badRequest()
+                        .body("Error: El producto '" + detalle.getNombre() + "' ya no está disponible.");
+                }
+
+                // Fijamos el precio real de la BD (Anti-Hacker)
+                detalle.setPrecio(productoReal.getPrecio());
+                
+                subtotalCalculado += (productoReal.getPrecio() * detalle.getCantidad());
+            }
+        }
+
+        // --- SOLUCIÓN AL UNBOXING ---
+        // Usamos un "Integer" intermedio para verificar nulos de forma segura
+        Integer descuentoFront = pedido.getDescuento();
+        int descuentoSeguro = (descuentoFront != null) ? descuentoFront : 0;
+
+        pedido.setSubtotal(subtotalCalculado);
+        pedido.setDescuento(descuentoSeguro); // Guardamos el valor seguro
+        pedido.setTotal(Math.max(0, subtotalCalculado - descuentoSeguro));
+
+        // Configuración final
         pedido.setId(null);
         if (pedido.getEstado() == null || pedido.getEstado().isEmpty()) {
             pedido.setEstado("Pendiente");
@@ -41,37 +74,25 @@ public class PedidoController {
         if (pedido.getProductos() != null) {
             pedido.getProductos().forEach(p -> p.setListo(false));
         }
-        return ResponseEntity.ok(pedidoRepository.save(pedido));
+        
+        Pedido nuevoPedido = pedidoRepository.save(pedido);
+        return ResponseEntity.ok(nuevoPedido);
     }
     
-    // --- LÓGICA ROBUSTA CON LOGS DE DEPURACIÓN ---
     @PutMapping("/{id}")
     public ResponseEntity<Pedido> updatePedido(@PathVariable Long id, @RequestBody Pedido pedidoData) {
-        System.out.println("🔄 Recibiendo actualización para Pedido ID: " + id);
+        System.out.println("🔄 Actualizando Pedido ID: " + id);
 
         return pedidoRepository.findById(id).map(pedidoExistente -> {
             
-            // 1. Actualizar Estado (Solo si viene uno válido y distinto a "Sin Cambios")
             if (pedidoData.getEstado() != null && !pedidoData.getEstado().equals("Sin Cambios")) {
                 pedidoExistente.setEstado(pedidoData.getEstado());
             }
             
-            // 2. Actualización Segura de Productos
             if (pedidoExistente.getProductos() != null && pedidoData.getProductos() != null) {
-                
-                System.out.println("   📦 Productos en BD: " + pedidoExistente.getProductos().size());
-                System.out.println("   📨 Productos recibidos: " + pedidoData.getProductos().size());
-
                 for (DetallePedido prodExistente : pedidoExistente.getProductos()) {
                     for (DetallePedido prodNuevo : pedidoData.getProductos()) {
-                        
-                        // DEBUG: Verificamos qué estamos comparando
-                        // System.out.println("      Comparando BD[" + prodExistente.getId() + "] con Nuevo[" + prodNuevo.getId() + "]");
-
-                        // COMPARACIÓN SEGURA DE IDs (Usando Objects.equals para evitar NullPointerException)
                         if (Objects.equals(prodExistente.getId(), prodNuevo.getId())) {
-                            
-                            System.out.println("      ✅ MATCH! Actualizando 'listo' a: " + prodNuevo.getListo());
                             prodExistente.setListo(prodNuevo.getListo());
                             break; 
                         }
@@ -80,7 +101,6 @@ public class PedidoController {
             }
 
             Pedido guardado = pedidoRepository.save(pedidoExistente);
-            System.out.println("💾 Cambios guardados correctamente.");
             return ResponseEntity.ok(guardado);
             
         }).orElse(ResponseEntity.notFound().build());
