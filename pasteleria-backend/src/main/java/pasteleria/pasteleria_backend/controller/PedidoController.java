@@ -40,6 +40,8 @@ public class PedidoController {
     public ResponseEntity<?> createPedido(@RequestBody Pedido pedido) {
         
         int subtotalCalculado = 0;
+        // Bandera para Estrategia de Demanda Nivel 2 (Mayorista)
+        boolean requiereConfirmacionStock = false;
 
         if (pedido.getProductos() != null) {
             for (DetallePedido detalle : pedido.getProductos()) {
@@ -50,6 +52,19 @@ public class PedidoController {
                         .body("Error: El producto '" + detalle.getNombre() + "' ya no está disponible.");
                 }
 
+                // --- ESTRATEGIA NIVEL 3: TECHO TÉCNICO / INDUSTRIAL ---
+                // Protección contra desbordamiento y abuso de memoria
+                if (detalle.getCantidad() > 1000) {
+                    return ResponseEntity.badRequest()
+                        .body("Error: La cantidad de '" + detalle.getNombre() + "' excede el límite técnico (1000). Contacte a ventas corporativas.");
+                }
+
+                // --- ESTRATEGIA NIVEL 2: VENTA MAYORISTA ---
+                // Si supera 20 unidades, marcamos el pedido para revisión manual
+                if (detalle.getCantidad() > 20) {
+                    requiereConfirmacionStock = true;
+                }
+
                 // Fijamos el precio real de la BD (Anti-Hacker)
                 detalle.setPrecio(productoReal.getPrecio());
                 
@@ -58,19 +73,25 @@ public class PedidoController {
         }
 
         // --- SOLUCIÓN AL UNBOXING ---
-        // Usamos un "Integer" intermedio para verificar nulos de forma segura
         Integer descuentoFront = pedido.getDescuento();
         int descuentoSeguro = (descuentoFront != null) ? descuentoFront : 0;
 
         pedido.setSubtotal(subtotalCalculado);
-        pedido.setDescuento(descuentoSeguro); // Guardamos el valor seguro
+        pedido.setDescuento(descuentoSeguro); 
         pedido.setTotal(Math.max(0, subtotalCalculado - descuentoSeguro));
 
         // Configuración final
         pedido.setId(null);
+        
+        // Lógica de Estado según Nivel de Demanda
         if (pedido.getEstado() == null || pedido.getEstado().isEmpty()) {
-            pedido.setEstado("Pendiente");
+            if (requiereConfirmacionStock) {
+                pedido.setEstado("Por Confirmar Stock"); // Nivel 2
+            } else {
+                pedido.setEstado("Pendiente"); // Nivel 1
+            }
         }
+
         if (pedido.getProductos() != null) {
             pedido.getProductos().forEach(p -> p.setListo(false));
         }
@@ -79,6 +100,7 @@ public class PedidoController {
         return ResponseEntity.ok(nuevoPedido);
     }
     
+    // ... (El resto del código: updatePedido, updateEstado, deletePedido se mantienen INTACTOS)
     @PutMapping("/{id}")
     public ResponseEntity<Pedido> updatePedido(@PathVariable Long id, @RequestBody Pedido pedidoData) {
         System.out.println("🔄 Actualizando Pedido ID: " + id);
