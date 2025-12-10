@@ -2,6 +2,7 @@ package pasteleria.pasteleria_backend.controller;
 
 import java.util.List;
 import java.util.Objects; 
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,6 @@ import pasteleria.pasteleria_backend.model.Pedido;
 import pasteleria.pasteleria_backend.model.Producto;
 import pasteleria.pasteleria_backend.repository.PedidoRepository;
 import pasteleria.pasteleria_backend.repository.ProductoRepository;
-
 @RestController
 @RequestMapping("/api/pedidos")
 public class PedidoController {
@@ -39,9 +39,28 @@ public class PedidoController {
     @PostMapping
     public ResponseEntity<?> createPedido(@RequestBody Pedido pedido) {
         
+        // --- ESTRATEGIA DE DOBLE CANDADO: VALIDACIÓN GLOBAL (Inicio) ---
+        // 1. Cálculo del volumen total antes de procesar lógica de negocio.
+        int totalGlobalUnidades = 0;
+        if (pedido.getProductos() != null) {
+            for (DetallePedido dp : pedido.getProductos()) {
+                totalGlobalUnidades += dp.getCantidad();
+            }
+        }
+
+        // 2. CANDADO DE SEGURIDAD (Nivel 3 - Industrial)
+        // Bloqueo absoluto si la suma total excede la capacidad técnica.
+        if (totalGlobalUnidades > 1000) {
+            return ResponseEntity.badRequest()
+                .body("Error de Seguridad: La cantidad total del pedido (" + totalGlobalUnidades + ") excede el límite logístico permitido (1000).");
+        }
+        // --- FIN ESTRATEGIA DOBLE CANDADO ---
+
         int subtotalCalculado = 0;
+        
         // Bandera para Estrategia de Demanda Nivel 2 (Mayorista)
-        boolean requiereConfirmacionStock = false;
+        // REGLA DE NEGOCIO ACTUALIZADA: Si el total global > 30, pasa a revisión.
+        boolean requiereConfirmacionStock = (totalGlobalUnidades > 30);
 
         if (pedido.getProductos() != null) {
             for (DetallePedido detalle : pedido.getProductos()) {
@@ -50,19 +69,6 @@ public class PedidoController {
                 if (productoReal == null || (productoReal.getActivo() != null && !productoReal.getActivo())) {
                     return ResponseEntity.badRequest()
                         .body("Error: El producto '" + detalle.getNombre() + "' ya no está disponible.");
-                }
-
-                // --- ESTRATEGIA NIVEL 3: TECHO TÉCNICO / INDUSTRIAL ---
-                // Protección contra desbordamiento y abuso de memoria
-                if (detalle.getCantidad() > 1000) {
-                    return ResponseEntity.badRequest()
-                        .body("Error: La cantidad de '" + detalle.getNombre() + "' excede el límite técnico (1000). Contacte a ventas corporativas.");
-                }
-
-                // --- ESTRATEGIA NIVEL 2: VENTA MAYORISTA ---
-                // Si supera 20 unidades, marcamos el pedido para revisión manual
-                if (detalle.getCantidad() > 20) {
-                    requiereConfirmacionStock = true;
                 }
 
                 // Fijamos el precio real de la BD (Anti-Hacker)
@@ -83,12 +89,14 @@ public class PedidoController {
         // Configuración final
         pedido.setId(null);
         
-        // Lógica de Estado según Nivel de Demanda
+        // Lógica de Estado según Nivel de Demanda (La Verdad Absoluta)
         if (pedido.getEstado() == null || pedido.getEstado().isEmpty()) {
             if (requiereConfirmacionStock) {
-                pedido.setEstado("Por Confirmar Stock"); // Nivel 2
+                // Nivel 2: Mayorista (31 - 1000 unidades)
+                pedido.setEstado("Por Confirmar Stock"); 
             } else {
-                pedido.setEstado("Pendiente"); // Nivel 1
+                // Nivel 1: Retail (0 - 30 unidades)
+                pedido.setEstado("Pendiente"); 
             }
         }
 
@@ -100,7 +108,6 @@ public class PedidoController {
         return ResponseEntity.ok(nuevoPedido);
     }
     
-    // ... (El resto del código: updatePedido, updateEstado, deletePedido se mantienen INTACTOS)
     @PutMapping("/{id}")
     public ResponseEntity<Pedido> updatePedido(@PathVariable Long id, @RequestBody Pedido pedidoData) {
         System.out.println("🔄 Actualizando Pedido ID: " + id);
@@ -144,5 +151,16 @@ public class PedidoController {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
+    }
+    @GetMapping("/track")
+    public ResponseEntity<?> trackPedido(@RequestParam Long id, @RequestParam String email) {
+        // Buscamos usando el método seguro del repositorio
+        Optional<Pedido> pedidoEncontrado = pedidoRepository.findByIdAndCliente_Email(id, email);
+
+        if (pedidoEncontrado.isPresent()) {
+            return ResponseEntity.ok(pedidoEncontrado.get());
+        } else {
+            return ResponseEntity.status(404).body("No encontramos un pedido con ese ID y Email.");
+        }
     }
 }
