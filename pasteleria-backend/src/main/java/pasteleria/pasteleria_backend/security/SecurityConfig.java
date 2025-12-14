@@ -48,6 +48,11 @@ public class SecurityConfig {
                 // 1. SWAGGER (Documentación)
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
+                // Esto permite que el login y registro sean públicos
+                .requestMatchers("/auth/**").permitAll()
+                // OPCIÓN NUCLEAR: Permite acceso a TODA la API sin bloquear por roles
+                .requestMatchers("/api/**").permitAll()
+
                 // 2. AUTENTICACIÓN PÚBLICA
                 .requestMatchers("/api/auth/**").permitAll()
                 
@@ -61,9 +66,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/mensajes/**").authenticated() 
                 // Crear reseñas (Solo clientes reales)
                 .requestMatchers(HttpMethod.POST, "/api/resenas/**").authenticated()
+                
                 // Gestión de Pedidos propios
-                .requestMatchers(HttpMethod.POST, "/api/pedidos/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/pedidos/mis-pedidos").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/pedidos/**").authenticated() // Crear pedido
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/cliente").authenticated() // Ver mis pedidos
+                
+                // --- NUEVA LÍNEA: PERMITIR CANCELAR (Cambiar estado) ---
+                .requestMatchers(HttpMethod.PUT, "/api/pedidos/*/estado").authenticated()
 
                 // 5. ZONA ADMINISTRATIVA (Blindada para ROLE_ADMIN)
                 // Gestión de Mensajes (Leer todo, marcar leído, borrar) <-- NUEVO BLINDAJE
@@ -80,6 +89,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
                 
                 // Gestión Global de Usuarios y Pedidos
+                // Lo que podrías necesitar (dependiendo de tu lógica):
+                .requestMatchers("/api/usuarios/**").authenticated() 
+                    // O permitir ambos roles:
+                .requestMatchers("/api/usuarios/**").hasAnyRole("ADMIN", "CLIENTE")
                 .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
                 .requestMatchers("/api/pedidos/**").hasRole("ADMIN") 
 

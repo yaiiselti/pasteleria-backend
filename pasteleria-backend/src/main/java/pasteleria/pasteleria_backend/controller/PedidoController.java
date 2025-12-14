@@ -2,9 +2,9 @@ package pasteleria.pasteleria_backend.controller;
 
 import java.util.List;
 import java.util.Objects; 
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,12 +21,16 @@ import pasteleria.pasteleria_backend.model.Pedido;
 import pasteleria.pasteleria_backend.model.Producto;
 import pasteleria.pasteleria_backend.repository.PedidoRepository;
 import pasteleria.pasteleria_backend.repository.ProductoRepository;
+import pasteleria.pasteleria_backend.service.PedidoService;
 @RestController
 @RequestMapping("/api/pedidos")
 public class PedidoController {
 
     @Autowired
     private PedidoRepository pedidoRepository;
+
+    @Autowired
+    private PedidoService pedidoService;
 
     @Autowired
     private ProductoRepository productoRepository;
@@ -152,17 +156,28 @@ public class PedidoController {
         }
         return ResponseEntity.notFound().build();
     }
-    @GetMapping("/track")
-    public ResponseEntity<?> trackPedido(@RequestParam Long id, @RequestParam String email) {
-        // Buscamos usando el método seguro del repositorio
-        Optional<Pedido> pedidoEncontrado = pedidoRepository.findByIdAndCliente_Email(id, email);
+    
+    @GetMapping("/{id}/track")
+    public ResponseEntity<?> trackearPedido(@PathVariable Long id, @RequestParam String email) {
+        // Ahora sí reconocerá "pedidoService"
+        Pedido pedido = pedidoService.findById(id); 
 
-        if (pedidoEncontrado.isPresent()) {
-            return ResponseEntity.ok(pedidoEncontrado.get());
-        } else {
-            return ResponseEntity.status(404).body("No encontramos un pedido con ese ID y Email.");
-        }
+    if (pedido == null) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body("El pedido no existe.");
     }
+
+    // 2. SEGURIDAD: Verificamos que el email coincida con el del pedido
+    // Esto evita que cualquiera vea pedidos ajenos adivinando el número
+    if (!pedido.getCliente().getEmail().equalsIgnoreCase(email)) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN) // 403
+            .body("El correo no coincide con el registrado en este pedido.");
+    }
+
+    // 3. Si todo coincide, devolvemos el pedido
+    return ResponseEntity.ok(pedido);
+    }
+
     // CORREGIDO: Usamos @RequestParam para evitar que Spring corte el ".com"
     @GetMapping("/cliente") // <--- Ya NO ponemos /{email} aquí
     public ResponseEntity<List<Pedido>> getPedidosByCliente(@RequestParam String email) { // <--- Cambiamos a @RequestParam

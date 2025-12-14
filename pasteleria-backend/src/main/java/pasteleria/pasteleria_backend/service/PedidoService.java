@@ -38,6 +38,11 @@ public class PedidoService {
         return pedidoRepository.findByClienteEmail(email);
     }
 
+    public Pedido findById(Long id) {
+    // Busca por ID y si no lo encuentra devuelve null
+    return pedidoRepository.findById(id).orElse(null);
+}
+
     @Transactional
     public Pedido savePedido(Pedido pedido) {
         // 1. VALIDACIÓN DE SEGURIDAD (CANTIDAD MÁXIMA 1000)
@@ -116,3 +121,4 @@ public class PedidoService {
         pedidoRepository.deleteById(id);
     }
 }
+

@@ -21,7 +21,7 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initData() {
         return args -> {
-            String adminRun = "11223344-5";
+            String adminRun = "11.111.111-1";
             
             if (!usuarioRepository.existsById(adminRun)) {
                 Usuario admin = new Usuario();
