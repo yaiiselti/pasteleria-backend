@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Embeddable
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true) // Ignora campos extra que mande React
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ClienteData {
     private String nombre;
     private String email;
@@ -18,7 +18,9 @@ public class ClienteData {
     private String tarjeta;
     private String comprobante;
     
-    // Campo auxiliar para que no falle la deserialización si viene dentro del objeto cliente
+    // --- NUEVO CAMPO NECESARIO PARA VALIDACIÓN ---
+    private String codigoPromo; 
+    
     @jakarta.persistence.Transient
     private String fechaEntrega; 
 }

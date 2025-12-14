@@ -163,4 +163,11 @@ public class PedidoController {
             return ResponseEntity.status(404).body("No encontramos un pedido con ese ID y Email.");
         }
     }
+    // CORREGIDO: Usamos @RequestParam para evitar que Spring corte el ".com"
+    @GetMapping("/cliente") // <--- Ya NO ponemos /{email} aquí
+    public ResponseEntity<List<Pedido>> getPedidosByCliente(@RequestParam String email) { // <--- Cambiamos a @RequestParam
+        // Ahora el email llega completo (ej: usuario@gmail.com)
+        List<Pedido> pedidos = pedidoRepository.findByCliente_Email(email);
+        return ResponseEntity.ok(pedidos);
+    }
 }

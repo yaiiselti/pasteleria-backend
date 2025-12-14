@@ -21,14 +21,22 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // 1. Buscamos al usuario por su email en TU base de datos
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + email));
 
-        // 2. Convertimos el rol (ej: "Administrador") a un formato que Spring entienda ("ROLE_ADMIN")
-        String rolSpring = "ROLE_" + usuario.getTipo().toUpperCase(); 
+        // --- CORRECCIÓN DE SEGURIDAD: Mapeo Estándar de Roles ---
+        // Normalizamos el rol para que Spring Security siempre reciba ROLE_ADMIN o ROLE_CLIENTE
+        // independientemente de cómo esté escrito en la base de datos ("Administrador", "admin", etc.)
+        String rolSpring;
+        String tipoBD = usuario.getTipo() != null ? usuario.getTipo().trim() : "";
 
-        // 3. Retornamos el objeto User oficial de Spring Security
+        if ("Administrador".equalsIgnoreCase(tipoBD) || "ADMIN".equalsIgnoreCase(tipoBD)) {
+            rolSpring = "ROLE_ADMIN";
+        } else {
+            // Por defecto, ante la duda o si es null, lo tratamos con el rol de menor privilegio
+            rolSpring = "ROLE_CLIENTE";
+        }
+
         return new User(
                 usuario.getEmail(), 
                 usuario.getPassword(), 

@@ -45,20 +45,45 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
             .authorizeHttpRequests(auth -> auth
-                // 1. SWAGGER (¡LA LISTA VIP!) 
-                // Agregamos todas las variantes posibles para que no falle
+                // 1. SWAGGER (Documentación)
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                // 2. RUTAS PÚBLICAS (Login y Registro)
+                // 2. AUTENTICACIÓN PÚBLICA
                 .requestMatchers("/api/auth/**").permitAll()
                 
-                // 3. RUTAS GET PÚBLICAS (Catálogo y Reseñas)
-                // OJO: Importante usar HttpMethod.GET
+                // 3. ZONA PÚBLICA (Solo Lectura)
+                // Catálogo de productos y reseñas visibles para todos
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll() // Ver reseñas es público
                 
-                .requestMatchers(HttpMethod.POST, "/api/mensajes/**").permitAll()
+                // 4. ZONA DE CLIENTES (Requiere estar logueado)
+                // Enviar mensajes (Contacto)
+                .requestMatchers(HttpMethod.POST, "/api/mensajes/**").authenticated() 
+                // Crear reseñas (Solo clientes reales)
+                .requestMatchers(HttpMethod.POST, "/api/resenas/**").authenticated()
+                // Gestión de Pedidos propios
+                .requestMatchers(HttpMethod.POST, "/api/pedidos/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/mis-pedidos").authenticated()
+
+                // 5. ZONA ADMINISTRATIVA (Blindada para ROLE_ADMIN)
+                // Gestión de Mensajes (Leer todo, marcar leído, borrar) <-- NUEVO BLINDAJE
+                .requestMatchers(HttpMethod.GET, "/api/mensajes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/mensajes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/mensajes/**").hasRole("ADMIN")
                 
+                // Gestión de Reseñas (Borrar spam) <-- NUEVO BLINDAJE
+                .requestMatchers(HttpMethod.DELETE, "/api/resenas/**").hasRole("ADMIN")
+
+                // Gestión de Productos (CRUD completo)
+                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
+                
+                // Gestión Global de Usuarios y Pedidos
+                .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers("/api/pedidos/**").hasRole("ADMIN") 
+
+                // 6. CUALQUIER OTRA RUTA (Por defecto cerrada)
                 .anyRequest().authenticated()
             )
             
@@ -72,11 +97,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permitimos el puerto de tu Frontend
+        // Ajusta esto al puerto exacto de tu Frontend
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173")); 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        
         configuration.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
